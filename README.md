@@ -1,0 +1,26 @@
+# Memento
+
+Chrome extension (MV3) that replaces the new tab with a personal accountability dashboard: life urgency grid, mission gate, focus timer, optional site friction, and Intelligence core.
+
+**Version:** 2.0.1
+
+## Development
+
+```bash
+npm install
+npm test
+npm run test:e2e   # headed Chrome + unpacked extension
+```
+
+Load unpacked: Chrome → Extensions → Developer mode → Load unpacked → this folder.
+
+## Release
+
+| Asset | Location |
+|-------|----------|
+| QA checklist | [QA.md](QA.md) |
+| Privacy policy | [docs/privacy-policy.md](docs/privacy-policy.md) · [privacy-policy.html](privacy-policy.html) |
+| Chrome Web Store copy | [docs/STORE_LISTING.md](docs/STORE_LISTING.md) |
+| Icons | [icons/](icons/) |
+
+Before publishing: host `privacy-policy.html`, complete manual items in [QA.md](QA.md), add screenshots per store listing guide.

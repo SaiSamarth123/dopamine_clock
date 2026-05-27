@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div id="settings-backdrop" class="settings-backdrop" hidden aria-hidden="true"></div>
+
+  <aside
+    id="settings-drawer"
+    class="settings-drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="settings-title"
+    aria-hidden="true"
+    hidden
+  >
+    <div class="settings-drawer-inner">
+      <header class="settings-header">
+        <h1 id="settings-title" class="settings-title">Settings</h1>
+        <button type="button" id="settings-close" class="settings-close" aria-label="Close settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
+      <p class="settings-subtitle">No data leaves this device.</p>
+
+      <div class="settings-tabs" role="tablist" aria-label="Settings categories">
+        <button type="button" id="settings-tab-life" class="settings-tab is-active" role="tab" aria-selected="true" aria-controls="settings-panel-life" data-tab="life">Life</button>
+        <button type="button" id="settings-tab-appearance" class="settings-tab" role="tab" aria-selected="false" aria-controls="settings-panel-appearance" data-tab="appearance">Appearance</button>
+        <button type="button" id="settings-tab-layout" class="settings-tab" role="tab" aria-selected="false" aria-controls="settings-panel-layout" data-tab="layout">Layout</button>
+        <button type="button" id="settings-tab-focus" class="settings-tab" role="tab" aria-selected="false" aria-controls="settings-panel-focus" data-tab="focus">Focus</button>
+      </div>
+
+      <div class="settings-scroll">
+      <form id="setup-form" class="settings-form" novalidate>
+        <div id="settings-panel-life" class="settings-tabpanel is-active" role="tabpanel" aria-labelledby="settings-tab-life">
+          <div class="settings-group">
+            <h3 class="settings-group-label">Your timeline</h3>
+            <label class="field">
+              <span class="field-label">Birth date</span>
+              <input type="date" id="input-birth" name="birthDate" required />
+            </label>
+
+            <label class="field">
+              <span class="field-label">Expected life expectancy (years)</span>
+              <input type="number" id="input-life" name="lifeExpectancy" min="1" max="130" value="80" required />
+            </label>
+
+            <label class="field">
+              <span class="field-label">Work day ends at</span>
+              <input type="time" id="input-work-day-end" name="workDayEndTime" value="18:00" required />
+            </label>
+            <p class="setup-hint">
+              The <strong>today</strong> strip on your tab counts down to this time each day.
+            </p>
+            <p class="setup-hint" id="lifespan-model-hint">
+              End of life is your birth date plus this many <strong>calendar years</strong> (same month and day).
+              The dot grid and % left use that span. The clock shows time lived since birth (years through milliseconds).
+            </p>
+          </div>
+        </div>
+
+        <div id="settings-panel-appearance" class="settings-tabpanel" role="tabpanel" aria-labelledby="settings-tab-appearance" hidden>
+          <div class="settings-group">
+            <h3 class="settings-group-label">Theme</h3>
+            <div id="theme-presets" class="theme-presets" role="group" aria-label="Theme presets"></div>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-group-label">Palette</h3>
+            <div class="color-grid">
+              <label class="color-field">
+                <input type="color" id="input-color-bg" value="#000000" />
+                <span class="field-label">Background</span>
+              </label>
+              <label class="color-field">
+                <input type="color" id="input-color-text" value="#f5f5f5" />
+                <span class="field-label">Text</span>
+              </label>
+              <label class="color-field">
+                <input type="color" id="input-color-accent" value="#ff6b35" />
+                <span class="field-label">Accent</span>
+              </label>
+              <label class="color-field">
+                <input type="color" id="input-color-crimson" value="#e63946" />
+                <span class="field-label">Highlight</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-group-label">Typography</h3>
+            <div id="font-presets" class="font-presets" role="group" aria-label="Font presets"></div>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-group-label">Sound</h3>
+            <label class="field">
+              <span class="field-label">Timer end sound</span>
+              <select id="input-sound" class="field-select">
+                <option value="chime">Crisp chime</option>
+                <option value="bell">Soft bell</option>
+                <option value="ping">High ping</option>
+                <option value="soft">Gentle tone</option>
+                <option value="none">Silent</option>
+              </select>
+            </label>
+
+            <button type="button" id="preview-sound-btn" class="btn-secondary">Preview sound</button>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-group-label">Behavior</h3>
+            <label class="field">
+              <span class="field-label">Target hourly worth ($)</span>
+              <input type="number" id="input-hourly-worth" min="0" step="1" value="50" />
+            </label>
+
+            <label class="toggle-field">
+              <span>Show milliseconds on life clock</span>
+              <input type="checkbox" id="input-show-ms" checked />
+            </label>
+
+            <label class="toggle-field">
+              <span>Show life clock labels</span>
+              <input type="checkbox" id="input-macro-clock-labels" checked />
+            </label>
+
+            <label class="toggle-field">
+              <span>Decimal life clock format</span>
+              <input type="checkbox" id="input-macro-clock-decimal" />
+            </label>
+          </div>
+        </div>
+
+        <div id="settings-panel-layout" class="settings-tabpanel" role="tabpanel" aria-labelledby="settings-tab-layout" hidden>
+          <div class="settings-group">
+            <h3 class="settings-group-label">Sections on tab</h3>
+            <p class="setup-hint">Toggle what appears on your new tab.</p>
+
+            <label class="toggle-field">
+              <span>Life remaining (macro)</span>
+              <input type="checkbox" id="input-show-macro" checked />
+            </label>
+            <label class="toggle-field">
+              <span>Focus timer (micro)</span>
+              <input type="checkbox" id="input-show-micro" checked />
+            </label>
+            <label class="toggle-field">
+              <span>Motivational jolt</span>
+              <input type="checkbox" id="input-show-jolt" checked />
+            </label>
+            <label class="toggle-field">
+              <span>Current mission bar</span>
+              <input type="checkbox" id="input-show-mission" checked />
+            </label>
+            <label class="toggle-field">
+              <span>Intelligence core</span>
+              <input type="checkbox" id="input-show-knowledge" checked />
+            </label>
+          </div>
+        </div>
+
+        <div id="settings-panel-focus" class="settings-tabpanel" role="tabpanel" aria-labelledby="settings-tab-focus" hidden>
+          <div class="settings-group">
+            <h3 class="settings-group-label">Site friction</h3>
+            <p class="setup-hint">
+              When enabled, navigating to a listed site (address bar, bookmark, or link) replaces that page with a
+              Memento pause screen — YouTube does not open on its own. After the countdown, click
+              <strong>Open anyway</strong> to continue. Your new tab override still loads Memento normally.
+            </p>
+
+            <label class="toggle-field">
+              <span>Enable distractor friction</span>
+              <input type="checkbox" id="input-friction-enabled" />
+            </label>
+
+            <label class="field">
+              <span class="field-label">Countdown before “Open anyway” (seconds)</span>
+              <input type="number" id="input-friction-delay" min="3" max="60" value="10" />
+            </label>
+
+            <fieldset class="distractor-fieldset">
+              <legend class="field-label">Common distractors</legend>
+              <div id="distractor-presets" class="distractor-presets" role="group" aria-label="Common distractor sites"></div>
+            </fieldset>
+
+            <p id="friction-site-warning" class="setup-error" role="alert" hidden></p>
+
+            <label class="field">
+              <span class="field-label">Custom domains (one per line)</span>
+              <textarea
+                id="input-friction-custom"
+                class="field-textarea"
+                rows="3"
+                placeholder="news.ycombinator.com&#10;netflix.com"
+                spellcheck="false"
+              ></textarea>
+            </label>
+
+            <p class="setup-hint">
+              Focus timer minutes appear on the extension icon while a session is running, even if you close this tab.
+            </p>
+
+            <button type="button" id="friction-clear-bypass" class="btn-secondary friction-clear-bypass">
+              Clear “Open anyway” bypasses
+            </button>
+            <p class="setup-hint">
+              Use this if a site skips the pause screen for up to an hour after you previously chose Open anyway.
+            </p>
+          </div>
+        </div>
+
+      </form>
+      </div>
+
+      <p id="setup-error" class="setup-error" role="alert" hidden></p>
+
+      <footer class="settings-footer">
+        <button type="submit" class="btn-primary" id="settings-done-btn" form="setup-form">Done</button>
+      </footer>
+    </div>
+  </aside>
+
+  <!-- Main dashboard -->
+  <main id="dashboard" class="dashboard" hidden>
+
+    <p id="extension-warning" class="setup-error extension-warning" role="alert" hidden></p>
+    <p id="friction-sync-error" class="setup-error friction-sync-error" role="alert" hidden></p>
+
+    <header class="dash-header dash-header-left">
+      <button type="button" id="edit-btn" class="menu-btn" aria-label="Open settings" title="Settings" aria-expanded="false" aria-controls="settings-drawer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="dash-header dash-header-right">
+      <p id="browse-grace-banner" class="browse-grace-banner tick-num" hidden aria-live="polite">
+        Intentional browse — <span id="browse-grace-time">5:00</span> left
+      </p>
+      <time id="dash-date" class="dash-date tick-num" datetime=""></time>
+      <button
+        type="button"
+        id="ambient-toggle"
+        class="ambient-toggle"
+        aria-label="Toggle focus ambience"
+        aria-pressed="false"
+        title="Focus ambience"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M11 5 6 9H2v6h4l5 4V5Z"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mission gate (idle new tab) -->
+    <section id="mission-gate" class="mission-gate" aria-labelledby="mission-gate-label">
+      <p id="mission-gate-label" class="mission-gate-kicker">Today&apos;s mission</p>
+      <div class="mission-bar" data-section="mission">
+        <label for="mission-input" class="mission-label">What are you doing next?</label>
+        <input
+          type="text"
+          id="mission-input"
+          class="mission-input"
+          placeholder="Ship the landing page, finish problem set 4…"
+          maxlength="200"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Current mission"
+        />
+      </div>
+      <div class="mission-gate-actions">
+        <button type="button" id="gate-start-focus" class="gate-btn gate-btn-primary">
+          Start 25 min focus
+        </button>
+        <button type="button" id="gate-intentional-browse" class="gate-btn gate-btn-secondary">
+          I&apos;m intentionally browsing
+          <span class="gate-btn-sub">5 min grace</span>
+        </button>
+      </div>
+      <p id="mission-gate-hint" class="mission-gate-hint">
+        Start a focus block to unlock the focus timer and insights.
+      </p>
+    </section>
+
+    <!-- 1. Macro urgency -->
+    <section id="block-macro" class="block block-macro" data-section="macro" aria-label="Life remaining">
+      <p id="jolt" class="jolt" data-section="jolt" aria-live="polite"></p>
+
+      <div class="life-grid-wrap">
+        <div
+          id="life-grid"
+          class="life-grid"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          aria-label="Life remaining"
+        ></div>
+      </div>
+
+      <div class="macro-summary">
+        <div class="macro-horizons" role="group" aria-label="Life and today time remaining">
+          <div class="macro-horizon">
+            <span class="macro-horizon-label">Life</span>
+            <p id="macro-remaining" class="macro-horizon-stat tick-num" aria-live="polite">0.0% left</p>
+          </div>
+          <div class="macro-horizon">
+            <span class="macro-horizon-label">Today</span>
+            <p id="today-remaining" class="macro-horizon-stat macro-horizon-stat--today tick-num" aria-live="polite">0h left today</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="age-clock" class="age-clock" aria-live="polite" aria-atomic="true" aria-label="Time lived since birth">
+        <div class="age-clock-row">
+          <span class="unit"><span id="val-years" class="val tick-num">00</span><span class="unit-label">years</span></span>
+          <span class="unit"><span id="val-months" class="val tick-num">00</span><span class="unit-label">months</span></span>
+          <span class="unit"><span id="val-days" class="val tick-num">00</span><span class="unit-label">days</span></span>
+          <span class="unit"><span id="val-hours" class="val tick-num">00</span><span class="unit-label">hours</span></span>
+          <span class="unit"><span id="val-minutes" class="val tick-num">00</span><span class="unit-label">minutes</span></span>
+          <span class="unit"><span id="val-seconds" class="val tick-num">00</span><span class="unit-label">seconds</span></span>
+          <span class="unit unit-ms"><span id="val-ms" class="val tick-num">000</span><span class="unit-label">ms</span></span>
+        </div>
+      </div>
+
+      <p id="momentum-ledger" class="momentum-ledger tick-num" aria-live="polite" hidden></p>
+    </section>
+
+    <!-- 2. Micro timer -->
+    <section id="block-micro" class="block block-micro" data-section="micro" aria-labelledby="micro-label">
+      <h2 id="micro-label" class="block-label">Focus session</h2>
+
+      <p id="micro-display" class="micro-display tick-num" aria-live="polite" aria-atomic="true">25:00</p>
+
+      <div class="micro-presets" role="group" aria-label="Timer presets">
+        <button type="button" class="preset-btn" data-seconds="1500" data-preset="deep">25 min · Deep Work</button>
+        <button type="button" class="preset-btn" data-seconds="3000" data-preset="extreme">50 min · Extreme Focus</button>
+        <button type="button" class="preset-btn" data-seconds="300" data-preset="break">5 min · Reset Break</button>
+      </div>
+
+      <div class="micro-controls" role="group" aria-label="Timer controls">
+        <button type="button" id="micro-start" class="ctrl-btn ctrl-primary">Start</button>
+        <button type="button" id="micro-pause" class="ctrl-btn">Pause</button>
+        <button type="button" id="micro-reset" class="ctrl-btn">Reset</button>
+      </div>
+
+      <p id="focus-stats" class="focus-stats tick-num" aria-live="polite"></p>
+    </section>
+
+    <!-- 6. Tri-Node Intelligence Core -->
+    <section id="block-knowledge" class="block block-trinode" data-section="knowledge" aria-labelledby="trinode-label">
+      <h2 id="trinode-label" class="block-label">Intelligence core</h2>
+
+      <div class="trinode-tabs" role="tablist" aria-label="Intelligence categories">
+        <button type="button" id="trinode-tab-world" class="trinode-tab is-active" role="tab" aria-selected="true" aria-controls="trinode-panel" data-type="world">[ World Truth ]</button>
+        <button type="button" id="trinode-tab-signal" class="trinode-tab" role="tab" aria-selected="false" aria-controls="trinode-panel" data-type="signal">[ Signal Vector ]</button>
+        <button type="button" id="trinode-tab-life" class="trinode-tab" role="tab" aria-selected="false" aria-controls="trinode-panel" data-type="life">[ Life Hack ]</button>
+      </div>
+
+      <div id="trinode-vector-row" class="trinode-vector-row" hidden>
+        <label for="trinode-vector-input" class="trinode-vector-label">Target Learning Vector:</label>
+        <input
+          type="text"
+          id="trinode-vector-input"
+          class="trinode-vector-input"
+          placeholder="PostgreSQL, Docker, System Design..."
+          maxlength="40"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Target learning vector"
+        />
+      </div>
+
+      <div id="trinode-panel" class="trinode-panel is-locked" role="tabpanel" aria-labelledby="trinode-tab-world" aria-live="polite">
+        <div class="trinode-content-head">
+          <h3 id="trinode-title" class="trinode-title"></h3>
+          <button type="button" id="trinode-reshuffle" class="trinode-reshuffle" aria-label="Reshuffle insight" title="Reshuffle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M16 3h5v5M4 20l16-16M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+            </svg>
+          </button>
+        </div>
+        <p id="trinode-content" class="trinode-content"></p>
+        <a id="trinode-source" class="trinode-source" target="_blank" rel="noopener noreferrer" hidden></a>
+
+        <div id="trinode-lock" class="trinode-lock">
+          <p class="trinode-lock-text">Unlock with focus</p>
+          <p class="trinode-lock-hint">Start your first focus session today to reveal today&apos;s insights.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="shared.cjs"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

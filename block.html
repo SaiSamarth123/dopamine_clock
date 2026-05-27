@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memento — pause before you scroll</title>
+  <link rel="stylesheet" href="block.css" />
+</head>
+<body>
+  <main class="block-page">
+    <p class="block-kicker">Memento · site friction</p>
+    <h1 class="block-title">Pause before <span id="block-host">this site</span></h1>
+    <p class="block-sub">
+      You tried to open this site. It will not load automatically — wait for the countdown, then choose
+      <strong>Open anyway</strong> or go back to Memento.
+    </p>
+    <p id="block-countdown-wrap" class="block-countdown-wrap" aria-live="polite">
+      <span class="block-countdown-label">Open anyway in</span>
+      <span id="block-countdown" class="block-countdown">0</span>
+      <span class="block-countdown-label">s</span>
+    </p>
+    <div class="block-actions">
+      <button type="button" id="block-open" class="block-btn block-btn-primary" disabled>
+        Open anyway
+      </button>
+      <a id="block-memento" class="block-btn block-btn-secondary" href="#">Back to Memento</a>
+    </div>
+  </main>
+  <script src="shared.cjs"></script>
+  <script src="block.js"></script>
+</body>
+</html>
