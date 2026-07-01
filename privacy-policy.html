@@ -34,37 +34,31 @@
 </head>
 <body>
   <h1>Memento — Privacy Policy</h1>
-  <p class="meta"><strong>Last updated:</strong> May 22, 2026 · <strong>Version:</strong> 2.0.1</p>
+  <p class="meta"><strong>Last updated:</strong> July 1, 2026 · <strong>Version:</strong> 0.0.0.1</p>
 
   <h2>Summary</h2>
-  <p>Memento replaces your new tab with a personal accountability dashboard. <strong>Settings, mission text, focus stats, and friction preferences stay on your device</strong> in Chrome local extension storage. We do not operate accounts, analytics, or a backend that receives your personal data.</p>
+  <p>Memento replaces your new tab with a personal accountability dashboard. <strong>Settings, mission text, and focus stats stay on your device</strong> in Chrome local extension storage. We do not operate accounts, analytics, or a backend that receives your personal data.</p>
 
   <h2>Data stored locally</h2>
-  <p>The extension uses <code>chrome.storage.local</code> for birth date, life expectancy, theme and layout preferences, mission and focus statistics, optional friction host lists, bypass timestamps, and cached dev.to article metadata. Uninstalling removes this data from your profile.</p>
+  <p>The extension uses <code>chrome.storage.local</code> for birth date, life expectancy, theme and layout preferences, mission and focus statistics, and cached dev.to article metadata. Uninstalling removes this data from your profile.</p>
 
   <h2>Network requests</h2>
   <table>
     <thead><tr><th>Destination</th><th>When</th><th>What is sent</th></tr></thead>
     <tbody>
-      <tr><td>Google Fonts</td><td>New tab loads</td><td>Standard font requests (see Google’s privacy policy)</td></tr>
       <tr><td>dev.to API</td><td>Intelligence core tab</td><td>Public article API request; no Memento account</td></tr>
     </tbody>
   </table>
 
-  <h2>Site friction</h2>
-  <p>When enabled, Declarative Net Request redirects hosts you configure to an in-extension block page. Rules are computed locally; browsing history is not sent to us.</p>
-
   <h2>Permissions</h2>
   <ul>
     <li><strong>storage</strong> — local settings and timer state</li>
-    <li><strong>declarativeNetRequest</strong> — optional site friction</li>
     <li><strong>alarms</strong> — badge and timer completion without a tab open</li>
-    <li><strong>tabs</strong> — return to new tab from block page</li>
     <li><strong>https://dev.to/*</strong> — public articles for Intelligence core</li>
   </ul>
 
   <h2>Contact</h2>
-  <p>Update the support email in the Chrome Web Store listing before publish.</p>
+  <p>Support: <a href="mailto:you@example.com">you@example.com</a> (update before publish if needed)</p>
 
   <p><a href="docs/privacy-policy.md">Markdown source</a></p>
 </body>

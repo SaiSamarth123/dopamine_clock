@@ -1,2 +1,2 @@
-const S = require("../shared.cjs");
+const S = require("../shared.js");
 module.exports = { S };

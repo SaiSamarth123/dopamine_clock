@@ -7,13 +7,13 @@ Use this document when creating the Chrome Web Store developer dashboard entry. 
 | Field | Value |
 |-------|--------|
 | Name | Memento |
-| Version | 2.0.1 (match [manifest.json](../manifest.json)) |
+| Version | 0.0.0.1 (match [manifest.json](../manifest.json)) |
 | Category | Productivity |
 | Language | English |
 
 ## Short description (≤ 132 characters)
 
-New tab accountability: life urgency grid, mission gate, focus timer, optional site friction. Data stays on your device.
+New tab accountability: life urgency grid, mission gate, and focus timer. Data stays on your device.
 
 ## Detailed description
 
@@ -25,9 +25,7 @@ New tab accountability: life urgency grid, mission gate, focus timer, optional s
 
 **Focus timer** — 25/50/90-minute presets, pause/reset, extension badge countdown, and stats (blocks today, minutes, streak). Sessions complete even if you close every Memento tab.
 
-**Optional site friction** — Redirect distracting hosts you choose through a short countdown interstitial. Temporary bypasses expire; rules stay local.
-
-**Privacy-first** — No account, no analytics backend. Settings and stats live in Chrome local storage. See our [privacy policy](../docs/privacy-policy.md) (host `privacy-policy.html` on GitHub Pages or your site before submit).
+**Privacy-first** — No account, no analytics backend. Settings and stats live in Chrome local storage. Fonts are bundled locally. See our [privacy policy](https://saisamarth123.github.io/dopamine_clock/privacy-policy.html).
 
 ---
 
@@ -35,27 +33,25 @@ New tab accountability: life urgency grid, mission gate, focus timer, optional s
 
 | Permission | Justification |
 |------------|---------------|
-| `storage` | Persist birth date, layout, mission, focus stats, friction hosts, and timer state locally. |
-| `declarativeNetRequest` + `declarativeNetRequestWithHostAccess` | User-enabled redirects for configured distraction hosts only. |
+| `storage` | Persist birth date, layout, mission, focus stats, and timer state locally. |
 | `alarms` | Update toolbar badge and record focus completion when no new tab is open. |
-| `tabs` | “Back to Memento” from block interstitial opens `chrome://newtab`. |
 | Host: `https://dev.to/*` | Optional Intelligence core fetches public dev.to articles; fails gracefully offline. |
 
 ## Privacy policy URL
 
-**TODO before publish:** Host `privacy-policy.html` (repo root) or `docs/privacy-policy.md` via GitHub Pages / your domain.
+**Live URL (after GitHub Pages deploy):** `https://saisamarth123.github.io/dopamine_clock/privacy-policy.html`
 
-Example: `https://<your-username>.github.io/memento/privacy-policy.html`
+Enable Pages: repo **Settings → Pages → Build and deployment → GitHub Actions** (workflow [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) deploys on push to `main`/`master`).
 
-Paste that URL in the store “Privacy policy” field.
+Paste the URL above in the store “Privacy policy” field.
 
 ## Support / contact
 
 | Field | Value |
 |-------|--------|
-| Support email | TODO: you@example.com |
-| Website (optional) | TODO: project homepage |
-| Developer name | TODO |
+| Support email | you@example.com |
+| Website (optional) | https://saisamarth123.github.io/dopamine_clock/ |
+| Developer name | Sai Samarth |
 
 ## Icons (included in package)
 
@@ -69,8 +65,7 @@ Recommended 1280×800 or 640×400 PNGs on Chrome stable with unpacked extension:
 1. **Mission gate + life grid** — Setup complete, idle timer, mission input visible, `#life-grid` and `#age-clock` visible.
 2. **Focus timer running** — Badge visible, timer counting, mission text filled.
 3. **Settings drawer** — Life tab with birth date; subtitle “No data leaves this device.”
-4. **Site friction block** — `block.html` for a test host with countdown.
-5. **Intelligence core** (optional) — After first focus today, Signal tab with article cards.
+4. **Intelligence core** (optional) — After first focus today, Signal tab with article cards.
 
 Save under `store/screenshots/` (gitignored until captured) or attach directly in dashboard.
 
@@ -82,7 +77,7 @@ Save under `store/screenshots/` (gitignored until captured) or attach directly i
 
 ## Single purpose statement
 
-Provides a customizable new tab dashboard for personal focus accountability (life timeline visualization, mission prompt, timer, optional browsing friction).
+Provides a customizable new tab dashboard for personal focus accountability (life timeline visualization, mission prompt, and timer).
 
 ## Data use certification (dashboard)
 

@@ -1,8 +1,8 @@
 # Memento
 
-Chrome extension (MV3) that replaces the new tab with a personal accountability dashboard: life urgency grid, mission gate, focus timer, optional site friction, and Intelligence core.
+Chrome extension (MV3) that replaces the new tab with a personal accountability dashboard: life urgency grid, mission gate, focus timer, and Intelligence core.
 
-**Version:** 2.0.1
+**Version:** 0.0.0.1
 
 ## Development
 

@@ -1,5 +1,5 @@
 /**
- * Memento — shared pure utilities (new tab, service worker, block page, tests)
+ * Memento — shared pure utilities (new tab, service worker, tests)
  */
 (function (root, factory) {
   const api = factory();
@@ -16,8 +16,6 @@
 
   const MIN_STREAK_SESSION_SEC = 15 * 60;
   const DEFAULT_WORK_DAY_END = "18:00";
-  const DEFAULT_FRICTION_DELAY_SEC = 10;
-  const MAX_FRICTION_SITES = 999;
   const CONFIG_VERSION = 2;
 
   const PRESET_DEEP_WORK_SEC = 25 * 60;
@@ -232,33 +230,7 @@
       return `Life expectancy must be greater than your age (${calendarAge}).`;
     }
 
-    const sections = data.customize?.sections || {};
-    const anySection = Object.values(sections).some(Boolean);
-    if (!anySection) return "Enable at least one on-screen section.";
-
-    const friction = data.distractorFriction;
-    if (friction?.enabled && friction.sites?.length > MAX_FRICTION_SITES) {
-      return `Site friction supports at most ${MAX_FRICTION_SITES} hosts. Remove some sites.`;
-    }
-
     return null;
-  }
-
-  function normalizeDistractorFriction(friction, defaultSites) {
-    const base = friction && typeof friction === "object" ? friction : {};
-    const delay = parseInt(base.delaySeconds, 10);
-    const sites = Array.isArray(base.sites) ? base.sites : defaultSites;
-    const normalizedSites = [
-      ...new Set(sites.map(normalizeHost).filter(Boolean)),
-    ].sort();
-    const capped = normalizedSites.slice(0, MAX_FRICTION_SITES);
-    return {
-      enabled: !!base.enabled,
-      delaySeconds:
-        Number.isFinite(delay) && delay >= 3 && delay <= 60 ? delay : DEFAULT_FRICTION_DELAY_SEC,
-      sites: capped.length ? capped : [...defaultSites],
-      truncated: normalizedSites.length > MAX_FRICTION_SITES,
-    };
   }
 
   function sanitizeExternalUrl(url) {
@@ -291,8 +263,6 @@
     MS_YEAR,
     MIN_STREAK_SESSION_SEC,
     DEFAULT_WORK_DAY_END,
-    DEFAULT_FRICTION_DELAY_SEC,
-    MAX_FRICTION_SITES,
     CONFIG_VERSION,
     PRESET_DEEP_WORK_SEC,
     DEFAULT_FOCUS_STATS,
@@ -314,7 +284,6 @@
     shouldRecordCompletion,
     applyFocusSessionComplete,
     validateFormData,
-    normalizeDistractorFriction,
     sanitizeExternalUrl,
     formatBadgeText,
     shouldShowBadge,

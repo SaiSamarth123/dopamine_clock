@@ -14,10 +14,10 @@ const LEGACY_CONFIG_KEY = "dopamineClockConfig";
 const MICRO_KEY = "mementoMicroTimer";
 const KNOWLEDGE_UNLOCK_KEY = "mementoKnowledgeUnlock";
 const INTENTIONAL_BROWSE_KEY = "mementoIntentionalBrowseUntil";
-const FRICTION_BYPASS_KEY = "mementoFrictionBypass";
 const FOCUS_STATS_KEY = "mementoFocusStats";
 const SEEN_LEDGER_KEY = "mementoSeenInsights";
 const SIGNAL_VECTOR_KEY = "mementoSignalVector";
+const ACTIVE_VIEW_KEY = "mementoActiveView";
 const LEDGER_MAX = 500;
 const DEVTO_ENDPOINT = "https://dev.to/api/articles";
 
@@ -30,7 +30,6 @@ const MS_MONTH = MS_YEAR / 12;
 
 const DRIFT_GRACE_MS = 45_000;
 const MIN_STREAK_SESSION_SEC = S.MIN_STREAK_SESSION_SEC;
-const MAX_FRICTION_SITES = S.MAX_FRICTION_SITES;
 const CONFIG_VERSION = S.CONFIG_VERSION;
 const TICKER_CHANNEL = "memento-ticker";
 const LIFE_GRID_COLS = 40;
@@ -112,38 +111,11 @@ const DEFAULT_CUSTOMIZE = {
   sound: "chime",
   showMilliseconds: true,
   macroClockShowLabels: true,
-  macroClockDecimalFormat: false,
   hourlyWorth: 50,
   ambientFocus: false,
-  sections: {
-    macro: true,
-    micro: true,
-    jolt: true,
-    mission: true,
-    knowledge: true,
-  },
 };
 
 const DEFAULT_WORK_DAY_END = "18:00";
-
-const DEFAULT_FRICTION_DELAY_SEC = 10;
-
-const DISTRACTOR_PRESETS = [
-  { id: "youtube", label: "YouTube", hosts: ["youtube.com", "youtu.be"] },
-  { id: "reddit", label: "Reddit", hosts: ["reddit.com", "old.reddit.com"] },
-  { id: "x", label: "X / Twitter", hosts: ["twitter.com", "x.com"] },
-  { id: "instagram", label: "Instagram", hosts: ["instagram.com"] },
-  { id: "facebook", label: "Facebook", hosts: ["facebook.com", "fb.com"] },
-  { id: "tiktok", label: "TikTok", hosts: ["tiktok.com"] },
-  { id: "netflix", label: "Netflix", hosts: ["netflix.com"] },
-  { id: "twitch", label: "Twitch", hosts: ["twitch.tv"] },
-];
-
-const DEFAULT_DISTRACTOR_FRICTION = {
-  enabled: false,
-  delaySeconds: DEFAULT_FRICTION_DELAY_SEC,
-  sites: ["youtube.com", "reddit.com", "x.com"],
-};
 
 const DEFAULT_CONFIG = {
   configVersion: CONFIG_VERSION,
@@ -152,8 +124,7 @@ const DEFAULT_CONFIG = {
   lifeExpectancy: 80,
   workDayEndTime: DEFAULT_WORK_DAY_END,
   mission: "",
-  distractorFriction: { ...DEFAULT_DISTRACTOR_FRICTION, sites: [...DEFAULT_DISTRACTOR_FRICTION.sites] },
-  customize: { ...DEFAULT_CUSTOMIZE, sections: { ...DEFAULT_CUSTOMIZE.sections } },
+  customize: { ...DEFAULT_CUSTOMIZE },
 };
 
 function normalizeConfig(cfg) {
@@ -176,56 +147,19 @@ function normalizeConfig(cfg) {
     ...DEFAULT_CUSTOMIZE,
     ...c,
     colors: { ...DEFAULT_CUSTOMIZE.colors, ...(c.colors || {}) },
-    sections: { ...DEFAULT_CUSTOMIZE.sections, ...(c.sections || {}) },
     hourlyWorth:
       typeof c.hourlyWorth === "number" && c.hourlyWorth >= 0
         ? c.hourlyWorth
         : DEFAULT_CUSTOMIZE.hourlyWorth,
     ambientFocus: !!c.ambientFocus,
     macroClockShowLabels: c.macroClockShowLabels !== false,
-    macroClockDecimalFormat: c.macroClockDecimalFormat === true,
     themeId:
       c.themeId === "custom" || THEME_PRESETS[c.themeId]
         ? c.themeId
         : DEFAULT_CUSTOMIZE.themeId,
     font: FONT_PRESETS[c.font] ? c.font : DEFAULT_CUSTOMIZE.font,
   };
-  merged.distractorFriction = normalizeDistractorFriction(cfg.distractorFriction);
   return merged;
-}
-
-function normalizeDistractorHost(raw) {
-  return S.normalizeHost(raw);
-}
-
-let frictionSitesTruncated = false;
-
-function normalizeDistractorFriction(friction) {
-  const out = S.normalizeDistractorFriction(friction, DEFAULT_DISTRACTOR_FRICTION.sites);
-  frictionSitesTruncated = !!out.truncated;
-  const { truncated, ...frictionOut } = out;
-  return frictionOut;
-}
-
-function updateFrictionSiteWarning() {
-  if (!dom.frictionSiteWarning) return;
-  const truncated = frictionSitesTruncated;
-  if (truncated) {
-    dom.frictionSiteWarning.hidden = false;
-    dom.frictionSiteWarning.textContent = `Only the first ${MAX_FRICTION_SITES} sites are used.`;
-  } else {
-    dom.frictionSiteWarning.hidden = true;
-  }
-}
-
-function hostsForPreset(presetId) {
-  const preset = DISTRACTOR_PRESETS.find((p) => p.id === presetId);
-  return preset ? [...preset.hosts] : [];
-}
-
-function isPresetFullySelected(presetId, siteSet) {
-  const hosts = hostsForPreset(presetId);
-  return hosts.length > 0 && hosts.every((h) => siteSet.has(h));
 }
 
 const DEFAULT_MICRO = {
@@ -340,9 +274,6 @@ function notifyBackground(type, payload = {}) {
         showExtensionContextWarning();
         return;
       }
-      if (response?.frictionError) {
-        showFrictionSyncError(response.frictionError);
-      }
     });
   } catch {
     showExtensionContextWarning();
@@ -353,13 +284,27 @@ function showExtensionContextWarning() {
   if (!dom.extensionWarning) return;
   dom.extensionWarning.hidden = false;
   dom.extensionWarning.textContent =
-    "Extension was reloaded — refresh this tab to sync timer and site rules.";
+    "Extension was reloaded — refresh this tab to sync your timer.";
 }
 
-function showFrictionSyncError(msg) {
-  if (!msg || !dom.frictionSyncError) return;
-  dom.frictionSyncError.hidden = false;
-  dom.frictionSyncError.textContent = `Could not update site rules: ${msg}`;
+function settingsDoneLabel() {
+  return config.setupComplete && config.birthDate ? "Done" : "Save & start";
+}
+
+let settingsToastTimer = null;
+
+function showSettingsToast(message) {
+  if (!dom.settingsToast || !message) return;
+  dom.settingsToast.textContent = message;
+  dom.settingsToast.hidden = false;
+  dom.settingsToast.classList.add("is-visible");
+  if (settingsToastTimer) clearTimeout(settingsToastTimer);
+  settingsToastTimer = window.setTimeout(() => {
+    dom.settingsToast.classList.remove("is-visible");
+    settingsToastTimer = window.setTimeout(() => {
+      dom.settingsToast.hidden = true;
+    }, 280);
+  }, 2400);
 }
 
 async function saveMicro(micro) {
@@ -491,42 +436,13 @@ function decomposeElapsed(ms) {
   return { years, months, days, hours, minutes, seconds, ms: rest };
 }
 
-const MACRO_CLOCK_DECIMAL_PRECISION = {
-  years: 6,
-  months: 4,
-  days: 3,
-  hours: 2,
-  minutes: 2,
-  seconds: 2,
-};
-
 function isMacroClockLabelsShown(customize = config.customize) {
   return customize?.macroClockShowLabels !== false;
 }
 
-function isMacroClockDecimal(customize = config.customize) {
-  return customize?.macroClockDecimalFormat === true;
-}
-
-function getMacroClockDecimalParts(elapsed) {
-  const ms = decomposeElapsed(elapsed).ms;
-  return {
-    years: elapsed / MS_YEAR,
-    months: elapsed / MS_MONTH,
-    days: elapsed / MS_DAY,
-    hours: elapsed / MS_HOUR,
-    minutes: elapsed / MS_MINUTE,
-    seconds: elapsed / MS_SECOND,
-    ms,
-  };
-}
-
-function formatMacroClockUnit(parts, key, decimal) {
+function formatMacroClockUnit(parts, key) {
   const v = parts[key];
   if (key === "ms") return pad(Math.floor(v), 3);
-  if (decimal) {
-    return Number(v).toFixed(MACRO_CLOCK_DECIMAL_PRECISION[key] ?? 2);
-  }
   return pad(v, 2);
 }
 
@@ -538,23 +454,21 @@ function clearMacroClockPrev() {
 
 function applyMacroClockPresentation() {
   document.body.classList.toggle("macro-clock-no-labels", !isMacroClockLabelsShown());
-  document.body.classList.toggle("macro-clock-decimal", isMacroClockDecimal());
 }
 
 function renderMacroClock(macro) {
-  const decimal = isMacroClockDecimal();
-  const parts = decimal ? getMacroClockDecimalParts(macro.elapsed) : macro.ageParts;
+  const parts = macro.ageParts;
 
-  setText(dom.valYears, formatMacroClockUnit(parts, "years", decimal), "years");
-  setText(dom.valMonths, formatMacroClockUnit(parts, "months", decimal), "months");
-  setText(dom.valDays, formatMacroClockUnit(parts, "days", decimal), "days");
-  setText(dom.valHours, formatMacroClockUnit(parts, "hours", decimal), "hours");
-  setText(dom.valMinutes, formatMacroClockUnit(parts, "minutes", decimal), "minutes");
-  setText(dom.valSeconds, formatMacroClockUnit(parts, "seconds", decimal), "seconds");
+  setText(dom.valYears, formatMacroClockUnit(parts, "years"), "years");
+  setText(dom.valMonths, formatMacroClockUnit(parts, "months"), "months");
+  setText(dom.valDays, formatMacroClockUnit(parts, "days"), "days");
+  setText(dom.valHours, formatMacroClockUnit(parts, "hours"), "hours");
+  setText(dom.valMinutes, formatMacroClockUnit(parts, "minutes"), "minutes");
+  setText(dom.valSeconds, formatMacroClockUnit(parts, "seconds"), "seconds");
 
   const showMs = config.customize?.showMilliseconds !== false && !reducedMotion;
   if (showMs && dom.valMs) {
-    setText(dom.valMs, formatMacroClockUnit(parts, "ms", decimal), "ms");
+    setText(dom.valMs, formatMacroClockUnit(parts, "ms"), "ms");
   }
 }
 
@@ -1092,23 +1006,15 @@ async function loadKnowledgeUnlockDate() {
   return typeof val === "string" ? val : null;
 }
 
-function isKnowledgeUnlocked(unlockDate) {
-  return unlockDate === todayISO();
-}
-
 async function recordKnowledgeUnlock() {
   const today = todayISO();
   if (knowledgeUnlockDate === today) return;
   if ((await loadKnowledgeUnlockDate()) === today) {
     knowledgeUnlockDate = today;
-    updateMissionGateUI();
-    renderTriNode();
     return;
   }
   knowledgeUnlockDate = today;
   await storageSet({ [KNOWLEDGE_UNLOCK_KEY]: today });
-  updateMissionGateUI();
-  renderTriNode();
 }
 
 async function onFocusSessionStarted() {
@@ -1230,13 +1136,11 @@ function selectTriNodeTab(type) {
   renderTriNode();
 }
 
-function updateTriNodeLockUI(unlocked) {
-  if (!dom.trinodePanel || !dom.trinodeLock) return;
-  dom.trinodePanel.classList.toggle("is-locked", !unlocked);
-
-  const disabled = !unlocked;
-  if (dom.trinodeVectorInput) dom.trinodeVectorInput.disabled = disabled;
-  if (dom.trinodeReshuffle) dom.trinodeReshuffle.disabled = disabled;
+function ensureTriNodeAccessible() {
+  if (!dom.trinodePanel) return;
+  dom.trinodePanel.classList.remove("is-locked");
+  if (dom.trinodeVectorInput) dom.trinodeVectorInput.disabled = false;
+  if (dom.trinodeReshuffle) dom.trinodeReshuffle.disabled = false;
 }
 
 function spinReshuffleIcon() {
@@ -1302,14 +1206,14 @@ async function renderTriNode({ force = false } = {}) {
     }
 
     await markSeen(item.id);
-    updateTriNodeLockUI(isKnowledgeUnlocked(knowledgeUnlockDate));
+    ensureTriNodeAccessible();
   } finally {
     trinodeRendering = false;
   }
 }
 
 /* ==========================================================================
-   7. Theme & visibility
+   7. Theme
    ========================================================================== */
 
 function hexToRgb(hex) {
@@ -1356,30 +1260,9 @@ function applyTheme(customize) {
   document.body.classList.toggle("theme-light", colors.bg === THEME_PRESETS.paper.colors.bg);
 }
 
-function applySectionVisibility(customize) {
-  const s = customize.sections;
-  const map = {
-    macro: dom.blockMacro,
-    micro: dom.blockMicro,
-    jolt: dom.jolt,
-    mission: dom.missionGate || dom.missionBar,
-    knowledge: dom.blockKnowledge,
-  };
-
-  for (const [key, el] of Object.entries(map)) {
-    if (!el) continue;
-    el.classList.toggle("section-hidden", !s[key]);
-  }
-
-  const visibleCount = Object.values(s).filter(Boolean).length;
-  dom.dashboard.classList.toggle("layout-minimal", visibleCount <= 2);
-  updateMissionGateUI();
-}
-
 function applyCustomize() {
-  if (!config.customize) config.customize = { ...DEFAULT_CUSTOMIZE, sections: { ...DEFAULT_CUSTOMIZE.sections } };
+  if (!config.customize) config.customize = { ...DEFAULT_CUSTOMIZE };
   applyTheme(config.customize);
-  applySectionVisibility(config.customize);
   applyMacroClockPresentation();
   clearMacroClockPrev();
 }
@@ -1546,7 +1429,7 @@ function updateAmbientToggleUI() {
 }
 
 async function toggleAmbientFocus() {
-  if (!config.customize) config.customize = { ...DEFAULT_CUSTOMIZE, sections: { ...DEFAULT_CUSTOMIZE.sections } };
+  if (!config.customize) config.customize = { ...DEFAULT_CUSTOMIZE };
   config.customize.ambientFocus = !config.customize.ambientFocus;
   await saveConfig(config);
   updateAmbientToggleUI();
@@ -1622,18 +1505,6 @@ function isIntentionalBrowsing(now = Date.now()) {
   return intentionalBrowseUntil != null && now < intentionalBrowseUntil;
 }
 
-function shouldShowMissionGate(now = Date.now()) {
-  return (
-    micro.status === "idle" &&
-    !isIntentionalBrowsing(now) &&
-    config.customize?.sections?.mission !== false
-  );
-}
-
-function shouldCollapseKnowledge() {
-  return !isKnowledgeUnlocked(knowledgeUnlockDate);
-}
-
 async function loadIntentionalBrowseUntil() {
   const result = await storageGet(INTENTIONAL_BROWSE_KEY);
   const until = result[INTENTIONAL_BROWSE_KEY];
@@ -1656,7 +1527,7 @@ async function startIntentionalBrowse() {
   intentionalBrowseUntil = until;
   await storageSet({ [INTENTIONAL_BROWSE_KEY]: until });
   resetIdleDrift();
-  updateMissionGateUI();
+  updateTimerUI();
 }
 
 function renderBrowseGraceBanner(now = Date.now()) {
@@ -1672,25 +1543,15 @@ function renderBrowseGraceBanner(now = Date.now()) {
   dom.browseGraceTime.textContent = formatMicroTime(remaining);
 }
 
-function updateMissionGateUI(now = Date.now()) {
+function updateTimerUI(now = Date.now()) {
   if (intentionalBrowseUntil != null && now >= intentionalBrowseUntil) {
     intentionalBrowseUntil = null;
     storageSet({ [INTENTIONAL_BROWSE_KEY]: null }).catch(() => {});
   }
 
-  const gate = shouldShowMissionGate(now);
-  const collapseKnowledge = shouldCollapseKnowledge();
-
-  dom.dashboard?.classList.toggle("is-mission-gate", gate);
-  dom.dashboard?.classList.toggle("knowledge-gated", collapseKnowledge);
-
   if (dom.gateStartFocus) {
     const hasMission = !!dom.missionInput?.value?.trim();
     dom.gateStartFocus.disabled = !hasMission;
-  }
-
-  if (dom.missionGateHint) {
-    dom.missionGateHint.hidden = !gate;
   }
 
   renderBrowseGraceBanner(now);
@@ -1836,19 +1697,8 @@ const dom = {
   settingsClose: document.getElementById("settings-close"),
   settingsTabLife: document.getElementById("settings-tab-life"),
   settingsTabAppearance: document.getElementById("settings-tab-appearance"),
-  settingsTabLayout: document.getElementById("settings-tab-layout"),
-  settingsTabFocus: document.getElementById("settings-tab-focus"),
   settingsPanelLife: document.getElementById("settings-panel-life"),
   settingsPanelAppearance: document.getElementById("settings-panel-appearance"),
-  settingsPanelLayout: document.getElementById("settings-panel-layout"),
-  settingsPanelFocus: document.getElementById("settings-panel-focus"),
-  distractorPresets: document.getElementById("distractor-presets"),
-  inputFrictionEnabled: document.getElementById("input-friction-enabled"),
-  inputFrictionDelay: document.getElementById("input-friction-delay"),
-  inputFrictionCustom: document.getElementById("input-friction-custom"),
-  frictionClearBypass: document.getElementById("friction-clear-bypass"),
-  frictionSiteWarning: document.getElementById("friction-site-warning"),
-  frictionSyncError: document.getElementById("friction-sync-error"),
   extensionWarning: document.getElementById("extension-warning"),
   settingsTabs: document.querySelector(".settings-tabs"),
   themePresets: document.getElementById("theme-presets"),
@@ -1856,20 +1706,25 @@ const dom = {
   settingsDoneBtn: document.getElementById("settings-done-btn"),
   setupForm: document.getElementById("setup-form"),
   setupError: document.getElementById("setup-error"),
+  settingsToast: document.getElementById("settings-toast"),
   dashboard: document.getElementById("dashboard"),
-  blockMacro: document.getElementById("block-macro"),
-  blockMicro: document.getElementById("block-micro"),
-  missionGate: document.getElementById("mission-gate"),
-  missionBar: document.querySelector(".mission-bar"),
+  viewClock: document.getElementById("view-clock"),
+  viewTimer: document.getElementById("view-timer"),
+  viewInsights: document.getElementById("view-insights"),
+  viewNav: document.querySelector(".view-nav"),
+  viewNavClock: document.getElementById("view-nav-clock"),
+  viewNavTimer: document.getElementById("view-nav-timer"),
+  viewNavInsights: document.getElementById("view-nav-insights"),
   gateStartFocus: document.getElementById("gate-start-focus"),
   gateIntentionalBrowse: document.getElementById("gate-intentional-browse"),
-  missionGateHint: document.getElementById("mission-gate-hint"),
   browseGraceBanner: document.getElementById("browse-grace-banner"),
   browseGraceTime: document.getElementById("browse-grace-time"),
   macroRemaining: document.getElementById("macro-remaining"),
   todayRemaining: document.getElementById("today-remaining"),
   ageClock: document.getElementById("age-clock"),
   lifeGrid: document.getElementById("life-grid"),
+  lifeGridWrap: document.querySelector(".life-grid-wrap"),
+  clockStage: document.querySelector(".clock-stage"),
   momentumLedger: document.getElementById("momentum-ledger"),
   dashDate: document.getElementById("dash-date"),
   ambientToggle: document.getElementById("ambient-toggle"),
@@ -1888,7 +1743,6 @@ const dom = {
   presetBtns: document.querySelectorAll(".preset-btn"),
   jolt: document.getElementById("jolt"),
   missionInput: document.getElementById("mission-input"),
-  blockKnowledge: document.getElementById("block-knowledge"),
   trinodeTabWorld: document.getElementById("trinode-tab-world"),
   trinodeTabSignal: document.getElementById("trinode-tab-signal"),
   trinodeTabLife: document.getElementById("trinode-tab-life"),
@@ -1912,12 +1766,6 @@ const dom = {
   inputHourlyWorth: document.getElementById("input-hourly-worth"),
   inputShowMs: document.getElementById("input-show-ms"),
   inputMacroClockLabels: document.getElementById("input-macro-clock-labels"),
-  inputMacroClockDecimal: document.getElementById("input-macro-clock-decimal"),
-  inputShowMacro: document.getElementById("input-show-macro"),
-  inputShowMicro: document.getElementById("input-show-micro"),
-  inputShowJolt: document.getElementById("input-show-jolt"),
-  inputShowMission: document.getElementById("input-show-mission"),
-  inputShowKnowledge: document.getElementById("input-show-knowledge"),
   previewSoundBtn: document.getElementById("preview-sound-btn"),
 };
 
@@ -1936,7 +1784,7 @@ let tickerChannel = null;
 let tickerLeader = true;
 const tickerTabId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-const SETTINGS_TAB_ORDER = ["life", "appearance", "layout", "focus"];
+const SETTINGS_TAB_ORDER = ["life", "appearance"];
 
 const SETTINGS_TAB_DOM = {
   life: {
@@ -1946,14 +1794,6 @@ const SETTINGS_TAB_DOM = {
   appearance: {
     tab: () => dom.settingsTabAppearance,
     panel: () => dom.settingsPanelAppearance,
-  },
-  layout: {
-    tab: () => dom.settingsTabLayout,
-    panel: () => dom.settingsPanelLayout,
-  },
-  focus: {
-    tab: () => dom.settingsTabFocus,
-    panel: () => dom.settingsPanelFocus,
   },
 };
 
@@ -1967,11 +1807,49 @@ const prev = {
   ms: null,
   remainingPct: null,
   litDots: null,
+  frontierIndex: null,
+  frontierProgress: null,
   macroRemaining: "",
   todayRemaining: "",
   microDisplay: "",
   microStatus: "",
 };
+
+function readLifeGridMetric(wrap, prop, fallback) {
+  const n = parseInt(getComputedStyle(wrap).getPropertyValue(prop), 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function syncLifeGridSize() {
+  const wrap = dom.lifeGridWrap ?? dom.lifeGrid?.parentElement;
+  if (!wrap) return;
+
+  const style = getComputedStyle(wrap);
+  const gap = parseFloat(style.getPropertyValue("--life-dot-gap")) || 4;
+  const cols = readLifeGridMetric(wrap, "--life-grid-cols", LIFE_GRID_COLS);
+  const rows = readLifeGridMetric(wrap, "--life-grid-rows", LIFE_GRID_ROWS);
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  if (w <= 0 || h <= 0) return;
+
+  const dotFromW = (w - (cols - 1) * gap) / cols;
+  const dotFromH = (h - (rows - 1) * gap) / rows;
+  const dotSize = Math.max(4, Math.min(dotFromW, dotFromH));
+  wrap.style.setProperty("--life-dot-size", `${dotSize}px`);
+}
+
+let lifeGridResizeObserver = null;
+
+function bindLifeGridResize() {
+  const wrap = dom.lifeGridWrap ?? dom.lifeGrid?.parentElement;
+  const stage = dom.clockStage;
+  if (!wrap || lifeGridResizeObserver) return;
+
+  lifeGridResizeObserver = new ResizeObserver(() => syncLifeGridSize());
+  lifeGridResizeObserver.observe(wrap);
+  if (stage) lifeGridResizeObserver.observe(stage);
+  window.addEventListener("resize", syncLifeGridSize, { passive: true });
+}
 
 function buildLifeGrid() {
   if (!dom.lifeGrid) return;
@@ -1985,32 +1863,66 @@ function buildLifeGrid() {
     const dot = document.createElement("span");
     dot.className = "life-grid-dot";
     dot.dataset.index = String(i);
+    const row = Math.floor(i / LIFE_GRID_COLS);
+    const rowRatio = LIFE_GRID_ROWS > 1 ? row / (LIFE_GRID_ROWS - 1) : 0;
+    dot.style.setProperty("--row-ratio", rowRatio.toFixed(4));
     frag.appendChild(dot);
     lifeGridDots.push(dot);
   }
   dom.lifeGrid.appendChild(frag);
   prev.litDots = null;
+  syncLifeGridSize();
 }
 
-function renderLifeGrid(remainingPct) {
+function getLifeGridFrontier(now = Date.now()) {
+  if (!cachedDates.birth || !cachedDates.death) {
+    return { index: 0, progress: 0 };
+  }
+
+  const birthMs = cachedDates.birth.getTime();
+  const deathMs = cachedDates.death.getTime();
+  const total = deathMs - birthMs;
+  if (total <= 0) return { index: 0, progress: 0 };
+
+  const elapsed = clamp(now - birthMs, 0, total);
+  const dotDuration = total / LIFE_GRID_DOTS;
+  const index = clamp(Math.floor(elapsed / dotDuration), 0, LIFE_GRID_DOTS - 1);
+  const progress = dotDuration > 0 ? (elapsed % dotDuration) / dotDuration : 0;
+  return { index, progress };
+}
+
+function renderLifeGrid(remainingPct, now = Date.now()) {
   if (!lifeGridDots.length) buildLifeGrid();
   if (!lifeGridDots.length) return;
 
   const litCount = Math.round(clamp(remainingPct / 100, 0, 1) * LIFE_GRID_DOTS);
-  if (prev.litDots === litCount && prev.litDots != null) return;
-  prev.litDots = litCount;
-
   const startLit = LIFE_GRID_DOTS - litCount;
-  for (let i = 0; i < LIFE_GRID_DOTS; i++) {
-    const dot = lifeGridDots[i];
-    dot.classList.toggle("is-lit", i >= startLit);
-    dot.classList.remove("is-frontier");
+
+  if (prev.litDots !== litCount) {
+    prev.litDots = litCount;
+    for (let i = 0; i < LIFE_GRID_DOTS; i++) {
+      lifeGridDots[i].classList.toggle("is-lit", i >= startLit);
+    }
   }
 
-  if (litCount > 0 && litCount < LIFE_GRID_DOTS) {
-    lifeGridDots[startLit]?.classList.add("is-frontier");
-  } else if (litCount === LIFE_GRID_DOTS && LIFE_GRID_DOTS > 0) {
-    lifeGridDots[0]?.classList.add("is-frontier");
+  const { index: frontierIndex, progress } = getLifeGridFrontier(now);
+
+  if (prev.frontierIndex !== frontierIndex) {
+    prev.frontierIndex = frontierIndex;
+    for (let i = 0; i < LIFE_GRID_DOTS; i++) {
+      lifeGridDots[i].classList.toggle("is-frontier", i === frontierIndex);
+    }
+  }
+
+  const frontierDot = lifeGridDots[frontierIndex];
+  if (frontierDot) {
+    frontierDot.style.setProperty("--frontier-progress", progress.toFixed(5));
+    prev.frontierProgress = progress;
+  }
+
+  const spentFraction = clamp((100 - remainingPct) / 100, 0.12, 0.88);
+  if (dom.clockStage) {
+    dom.clockStage.style.setProperty("--spent-fraction", spentFraction.toFixed(4));
   }
 
   if (dom.lifeGrid) {
@@ -2065,7 +1977,6 @@ function selectSettingsTab(tabId, { focusPanel = false } = {}) {
 
 function tabForValidationError(err) {
   if (!err) return activeSettingsTab;
-  if (/on-screen section/i.test(err)) return "layout";
   if (/birth date|life expectancy/i.test(err)) return "life";
   return activeSettingsTab;
 }
@@ -2094,7 +2005,7 @@ function openSettingsDrawer({ locked = false } = {}) {
     dom.settingsDoneBtn.textContent = "Save & start";
   } else {
     dom.settingsClose.hidden = false;
-    dom.settingsDoneBtn.textContent = "Done";
+    dom.settingsDoneBtn.textContent = settingsDoneLabel();
   }
 
   selectSettingsTab("life");
@@ -2158,61 +2069,6 @@ function fillSetupForm() {
   if (dom.inputMacroClockLabels) {
     dom.inputMacroClockLabels.checked = c.macroClockShowLabels !== false;
   }
-  if (dom.inputMacroClockDecimal) {
-    dom.inputMacroClockDecimal.checked = c.macroClockDecimalFormat === true;
-  }
-  const s = { ...DEFAULT_CUSTOMIZE.sections, ...c.sections };
-  dom.inputShowMacro.checked = s.macro !== false;
-  dom.inputShowMicro.checked = s.micro !== false;
-  dom.inputShowJolt.checked = s.jolt !== false;
-  dom.inputShowMission.checked = s.mission !== false;
-  dom.inputShowKnowledge.checked = s.knowledge !== false;
-
-  const friction = config.distractorFriction || DEFAULT_DISTRACTOR_FRICTION;
-  if (dom.inputFrictionEnabled) dom.inputFrictionEnabled.checked = !!friction.enabled;
-  if (dom.inputFrictionDelay) {
-    dom.inputFrictionDelay.value = String(friction.delaySeconds ?? DEFAULT_FRICTION_DELAY_SEC);
-  }
-  syncDistractorPresetUI(friction.sites || []);
-  if (dom.inputFrictionCustom) {
-    dom.inputFrictionCustom.value = customHostsForFriction(friction.sites || []).join("\n");
-  }
-  updateFrictionSiteWarning();
-}
-
-function customHostsForFriction(sites) {
-  const presetHosts = new Set(DISTRACTOR_PRESETS.flatMap((p) => p.hosts));
-  return sites.filter((h) => !presetHosts.has(h));
-}
-
-function syncDistractorPresetUI(sites) {
-  if (!dom.distractorPresets) return;
-  const siteSet = new Set(sites);
-  dom.distractorPresets.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-    input.checked = isPresetFullySelected(input.dataset.presetId, siteSet);
-  });
-}
-
-function readDistractorFrictionFromForm() {
-  const siteSet = new Set();
-  dom.distractorPresets?.querySelectorAll('input[type="checkbox"]:checked').forEach((input) => {
-    for (const host of hostsForPreset(input.dataset.presetId)) {
-      siteSet.add(host);
-    }
-  });
-
-  const customRaw = dom.inputFrictionCustom?.value || "";
-  for (const line of customRaw.split(/\r?\n/)) {
-    const host = normalizeDistractorHost(line);
-    if (host) siteSet.add(host);
-  }
-
-  const delay = parseInt(dom.inputFrictionDelay?.value, 10);
-  return normalizeDistractorFriction({
-    enabled: dom.inputFrictionEnabled?.checked === true,
-    delaySeconds: delay,
-    sites: [...siteSet],
-  });
 }
 
 function syncPresetUI() {
@@ -2283,22 +2139,6 @@ function buildPresetControls() {
       dom.fontPresets.appendChild(btn);
     }
   }
-
-  if (dom.distractorPresets) {
-    dom.distractorPresets.innerHTML = "";
-    for (const preset of DISTRACTOR_PRESETS) {
-      const label = document.createElement("label");
-      label.className = "distractor-preset";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.dataset.presetId = preset.id;
-      const span = document.createElement("span");
-      span.textContent = preset.label;
-      label.append(input, span);
-      dom.distractorPresets.appendChild(label);
-    }
-    syncDistractorPresetUI(config.distractorFriction?.sites || []);
-  }
 }
 
 function refreshDashboardSnapshot() {
@@ -2312,11 +2152,7 @@ function refreshDashboardSnapshot() {
     expiredPct: macro.expiredPct,
   };
 
-  if (config.customize?.sections?.jolt !== false) {
-    dom.jolt.textContent = pickJolt(config, snapshot);
-  } else {
-    dom.jolt.textContent = "";
-  }
+  dom.jolt.textContent = pickJolt(config, snapshot);
 
   initMacro();
   renderMicroUI();
@@ -2341,7 +2177,6 @@ function applyLiveSettings(overrides = {}) {
   syncPresetUI();
 
   initMacro();
-  updateFrictionSiteWarning();
 
   const err = validateForm(parseForm());
   if (!err) {
@@ -2419,16 +2254,8 @@ function parseCustomizeForm() {
     sound: dom.inputSound.value || "chime",
     showMilliseconds: dom.inputShowMs.checked,
     macroClockShowLabels: dom.inputMacroClockLabels?.checked !== false,
-    macroClockDecimalFormat: dom.inputMacroClockDecimal?.checked === true,
     hourlyWorth: Math.max(0, parseFloat(dom.inputHourlyWorth?.value, 10) || 0),
     ambientFocus: !!config.customize?.ambientFocus,
-    sections: {
-      macro: dom.inputShowMacro.checked,
-      micro: dom.inputShowMicro.checked,
-      jolt: dom.inputShowJolt.checked,
-      mission: dom.inputShowMission.checked,
-      knowledge: dom.inputShowKnowledge.checked,
-    },
   };
 }
 
@@ -2437,7 +2264,6 @@ function parseForm() {
     birthDate: dom.inputBirth.value || null,
     lifeExpectancy: parseFloat(dom.inputLife.value, 10) || 80,
     workDayEndTime: dom.inputWorkDayEnd?.value || DEFAULT_WORK_DAY_END,
-    distractorFriction: readDistractorFrictionFromForm(),
     customize: parseCustomizeForm(),
   };
 }
@@ -2452,6 +2278,7 @@ async function handleSetupSubmit(e) {
     showError(err);
     return;
   }
+
   showError("");
 
   config = normalizeConfig({
@@ -2460,9 +2287,20 @@ async function handleSetupSubmit(e) {
     setupComplete: true,
   });
 
+  const doneBtn = dom.settingsDoneBtn;
+  const doneLabel = settingsDoneLabel();
+  if (doneBtn) {
+    doneBtn.disabled = true;
+    doneBtn.textContent = "Saving…";
+  }
+
   try {
     await saveConfig(config);
   } catch {
+    if (doneBtn) {
+      doneBtn.disabled = false;
+      doneBtn.textContent = doneLabel;
+    }
     showError("Could not save settings. Try again.");
     return;
   }
@@ -2472,6 +2310,14 @@ async function handleSetupSubmit(e) {
   rebuildDateCache();
   closeSettingsDrawer({ force: true });
   showDashboard();
+  showSettingsToast("Settings saved");
+
+  if (doneBtn) {
+    doneBtn.disabled = false;
+    doneBtn.textContent = doneLabel;
+  }
+
+  notifyBackground("mementoRefreshBadge");
 }
 
 /* ==========================================================================
@@ -2599,7 +2445,7 @@ async function completeMicro() {
     await handleMicroCompletion(completed);
     maybePlayChime(completedAt);
     renderMicroUI();
-    updateMissionGateUI();
+    updateTimerUI();
   } finally {
     completing = false;
     stopMicroLoop();
@@ -2615,7 +2461,7 @@ async function reconcileMicroState() {
     await handleMicroCompletion(completed);
     stopMicroLoop();
     renderMicroUI();
-    updateMissionGateUI();
+    updateTimerUI();
     return;
   }
 
@@ -2676,7 +2522,7 @@ function onMicroStorageChanged(newMicro) {
   }
 
   renderMicroUI();
-  updateMissionGateUI();
+  updateTimerUI();
 
   if (micro.status === "running") {
     startMicroLoop();
@@ -2686,7 +2532,7 @@ function onMicroStorageChanged(newMicro) {
 }
 
 /* ==========================================================================
-   13. Mission gate
+   13. Timer view UI
    ========================================================================== */
 
 async function commitMission() {
@@ -2697,14 +2543,15 @@ async function commitMission() {
   await saveConfig(config);
   dom.missionInput?.classList.remove("is-empty-hint");
   syncDriftAnchor();
-  updateMissionGateUI();
+  updateTimerUI();
 }
 
-async function startFocusFromGate() {
+async function startFocusFromMission() {
   const text = dom.missionInput?.value?.trim();
   if (!text) {
     dom.missionInput?.classList.add("is-empty-hint");
     dom.missionInput?.focus();
+    setView("timer");
     return;
   }
 
@@ -2712,13 +2559,102 @@ async function startFocusFromGate() {
   config.mission = text;
   await saveConfig(config);
 
+  setView("timer");
   await selectPreset(PRESETS.deepWork);
   await startMicro(PRESETS.deepWork);
-  updateMissionGateUI();
+  updateTimerUI();
 }
 
 /* ==========================================================================
-   14. Render / ticker
+   14. View router
+   ========================================================================== */
+
+const VIEW_ORDER = ["clock", "timer", "insights"];
+
+const VIEW_DOM = {
+  clock: {
+    panel: () => dom.viewClock,
+    tab: () => dom.viewNavClock,
+  },
+  timer: {
+    panel: () => dom.viewTimer,
+    tab: () => dom.viewNavTimer,
+  },
+  insights: {
+    panel: () => dom.viewInsights,
+    tab: () => dom.viewNavInsights,
+  },
+};
+
+let activeView = "clock";
+
+function setView(viewId, { persist = true } = {}) {
+  if (!VIEW_ORDER.includes(viewId)) viewId = "clock";
+  activeView = viewId;
+
+  for (const id of VIEW_ORDER) {
+    const panelEl = VIEW_DOM[id].panel();
+    const tabEl = VIEW_DOM[id].tab();
+    const isActive = id === viewId;
+
+    panelEl?.classList.toggle("is-active", isActive);
+    if (isActive) {
+      panelEl?.removeAttribute("hidden");
+    } else {
+      panelEl?.setAttribute("hidden", "");
+    }
+
+    tabEl?.classList.toggle("is-active", isActive);
+    tabEl?.setAttribute("aria-selected", isActive ? "true" : "false");
+  }
+
+  if (persist) {
+    storageSet({ [ACTIVE_VIEW_KEY]: viewId }).catch(() => {});
+  }
+
+  if (viewId === "insights") {
+    renderTriNode();
+  }
+
+  if (viewId === "clock") {
+    syncLifeGridSize();
+  }
+}
+
+function bindViewNav() {
+  VIEW_ORDER.forEach((viewId) => {
+    VIEW_DOM[viewId].tab()?.addEventListener("click", () => setView(viewId));
+  });
+
+  dom.viewNav?.addEventListener("keydown", (e) => {
+    const idx = VIEW_ORDER.indexOf(activeView);
+    if (idx < 0) return;
+
+    let nextIdx = idx;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      nextIdx = (idx + 1) % VIEW_ORDER.length;
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      nextIdx = (idx - 1 + VIEW_ORDER.length) % VIEW_ORDER.length;
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      nextIdx = 0;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      nextIdx = VIEW_ORDER.length - 1;
+    } else {
+      return;
+    }
+
+    const nextView = VIEW_ORDER[nextIdx];
+    setView(nextView);
+    VIEW_DOM[nextView].tab()?.focus();
+  });
+}
+
+/* ==========================================================================
+   15. Render / ticker
    ========================================================================== */
 
 function renderFrame(now = Date.now()) {
@@ -2734,13 +2670,12 @@ function renderFrame(now = Date.now()) {
 
   renderMacroClock(macro);
 
-  prev.remainingPct = remainingPct;
-  renderLifeGrid(remainingPct);
+  renderLifeGrid(remainingPct, now);
 
   renderDashDate(now);
   renderMomentumLedger(now);
   renderFocusStats();
-  updateMissionGateUI(now);
+  updateTimerUI(now);
 
   if (micro.status === "running") {
     renderMicroUI(now);
@@ -2855,17 +2790,14 @@ function showDashboard() {
     yearsLeft: macro.remainingParts.years,
     expiredPct: macro.expiredPct,
   };
-  if (config.customize?.sections?.jolt !== false) {
-    dom.jolt.textContent = pickJolt(config, snapshot);
-  } else {
-    dom.jolt.textContent = "";
-  }
+  dom.jolt.textContent = pickJolt(config, snapshot);
 
   applyCustomize();
   updateAmbientToggleUI();
   syncDriftAnchor();
   renderFocusStats();
-  updateMissionGateUI();
+  updateTimerUI();
+  ensureTriNodeAccessible();
   renderTriNode();
 }
 
@@ -2876,7 +2808,7 @@ function handleEscape(e) {
 }
 
 /* ==========================================================================
-   15. Init
+   16. Init
    ========================================================================== */
 
 function bindEvents() {
@@ -2907,19 +2839,7 @@ function bindEvents() {
     dom.inputHourlyWorth,
     dom.inputShowMs,
     dom.inputMacroClockLabels,
-    dom.inputMacroClockDecimal,
-    dom.inputShowMacro,
-    dom.inputShowMicro,
-    dom.inputShowJolt,
-    dom.inputShowMission,
-    dom.inputShowKnowledge,
-    dom.inputFrictionEnabled,
-    dom.inputFrictionDelay,
-    dom.inputFrictionCustom,
   ];
-  dom.distractorPresets?.querySelectorAll('input[type="checkbox"]').forEach((el) => {
-    el.addEventListener("change", () => applyLiveSettings());
-  });
   liveInputs.forEach((el) => {
     if (!el) return;
     const evt =
@@ -2955,10 +2875,13 @@ function bindEvents() {
   dom.missionInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (shouldShowMissionGate()) {
-        startFocusFromGate();
+      const text = dom.missionInput?.value?.trim();
+      if (text) {
+        startFocusFromMission();
       } else {
-        commitMission();
+        setView("timer");
+        dom.missionInput?.classList.add("is-empty-hint");
+        dom.missionInput?.focus();
       }
     }
   });
@@ -2967,16 +2890,11 @@ function bindEvents() {
     dom.missionInput.classList.remove("is-empty-hint");
     syncDriftAnchor();
     renderMomentumLedger();
-    updateMissionGateUI();
+    updateTimerUI();
   });
 
-  dom.gateStartFocus?.addEventListener("click", () => startFocusFromGate());
+  dom.gateStartFocus?.addEventListener("click", () => startFocusFromMission());
   dom.gateIntentionalBrowse?.addEventListener("click", () => startIntentionalBrowse());
-
-  dom.frictionClearBypass?.addEventListener("click", async () => {
-    await storageSet({ [FRICTION_BYPASS_KEY]: {} });
-    notifyBackground("mementoSync");
-  });
 
   dom.ambientToggle?.addEventListener("click", () => toggleAmbientFocus());
 
@@ -3049,9 +2967,7 @@ function bindEvents() {
     SETTINGS_TAB_DOM[nextTab].tab()?.focus();
   });
 
-  dom.trinodeLock?.addEventListener("click", () => {
-    dom.blockMicro?.scrollIntoView({ behavior: "smooth", block: "center" });
-  });
+  bindViewNav();
 
   if (hasChromeStorage() && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -3067,14 +2983,12 @@ function bindEvents() {
       }
       if (changes[KNOWLEDGE_UNLOCK_KEY]) {
         knowledgeUnlockDate = changes[KNOWLEDGE_UNLOCK_KEY].newValue ?? null;
-        updateMissionGateUI();
-        renderTriNode();
       }
       if (changes[INTENTIONAL_BROWSE_KEY]) {
         const until = changes[INTENTIONAL_BROWSE_KEY].newValue;
         intentionalBrowseUntil =
           typeof until === "number" && until > Date.now() ? until : null;
-        updateMissionGateUI();
+        updateTimerUI();
       }
       if (changes[FOCUS_STATS_KEY]) {
         focusStats = rollFocusStatsToToday(
@@ -3096,8 +3010,6 @@ function bindEvents() {
     if (e.key === KNOWLEDGE_UNLOCK_KEY && e.newValue) {
       try {
         knowledgeUnlockDate = JSON.parse(e.newValue);
-        updateMissionGateUI();
-        renderTriNode();
       } catch {
         /* ignore */
       }
@@ -3107,7 +3019,7 @@ function bindEvents() {
         const until = JSON.parse(e.newValue);
         intentionalBrowseUntil =
           typeof until === "number" && until > Date.now() ? until : null;
-        updateMissionGateUI();
+        updateTimerUI();
       } catch {
         /* ignore */
       }
@@ -3146,23 +3058,25 @@ async function init() {
 
   buildPresetControls();
   bindEvents();
+  bindLifeGridResize();
   setupTickerChannel();
   applyCustomize();
+  ensureTriNodeAccessible();
   updateAmbientToggleUI();
 
   dom.dashboard.hidden = false;
   fillSetupForm();
 
-  if (hasChromeStorage()) {
-    chrome.runtime.sendMessage({ type: "mementoGetFrictionError" }, (response) => {
-      if (response?.error) showFrictionSyncError(response.error);
-    });
-  }
+  // Wake the service worker on every new-tab load so it clears any leftover
+  // dynamic redirect rules from the removed site-friction feature.
+  notifyBackground("mementoSync");
 
   if (config.setupComplete && config.birthDate) {
     closeSettingsDrawer({ force: true });
     showDashboard();
+    setView("clock", { persist: false });
   } else {
+    setView("clock", { persist: false });
     openSettingsDrawer({ locked: true });
   }
 }

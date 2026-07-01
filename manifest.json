@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Memento",
-  "version": "2.0.1",
-  "description": "New tab accountability for your stated mission — life urgency, focus timer, and optional site friction.",
+  "version": "0.0.0.1",
+  "description": "New tab accountability for your stated mission — life urgency and focus timer.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -22,12 +22,6 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": [
-    "storage",
-    "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess",
-    "alarms",
-    "tabs"
-  ],
+  "permissions": ["storage", "alarms"],
   "host_permissions": ["https://dev.to/*"]
 }
