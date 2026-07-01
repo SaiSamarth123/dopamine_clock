@@ -56,7 +56,7 @@ describe("extension integrity", () => {
 
   it("privacy policy and store docs exist", () => {
     assert.ok(fs.existsSync(path.join(root, "docs/privacy-policy.md")));
-    assert.ok(fs.existsSync(path.join(root, "privacy-policy.html")));
+    assert.ok(fs.existsSync(path.join(root, "docs/index.html")));
     assert.ok(fs.existsSync(path.join(root, "docs/STORE_LISTING.md")));
   });
 });

@@ -11,7 +11,7 @@ Run on **Chrome stable** with the unpacked extension ([manifest.json](manifest.j
 | Unit tests (`npm test`) | **Pass** — 11 tests |
 | E2E (`npm run test:e2e`) | **Partial** — setup/mission gate, block page (3/5 specs; 2 flaky when persistent profile already has config) |
 | Manifest icons 16/48/128 | **Done** — [icons/](icons/) + [manifest.json](manifest.json) |
-| Privacy policy | **Done** — [docs/privacy-policy.md](docs/privacy-policy.md), [privacy-policy.html](privacy-policy.html) |
+| Privacy policy | **Done** — [docs/privacy-policy.md](docs/privacy-policy.md), [docs/index.html](docs/index.html) |
 | Store listing draft | **Done** — [docs/STORE_LISTING.md](docs/STORE_LISTING.md) |
 | Manual Chrome stable pass | **Pending** — complete unchecked items below before Web Store submit |
 
@@ -63,7 +63,7 @@ Run on **Chrome stable** with the unpacked extension ([manifest.json](manifest.j
 - [x] Privacy policy document in repo (+ HTML for hosting)
 - [x] Store listing copy and permission justifications ([docs/STORE_LISTING.md](docs/STORE_LISTING.md))
 - [ ] Privacy policy URL hosted and entered in Chrome Web Store dashboard
-- [ ] Support email set in store listing (see TODO in STORE_LISTING.md)
+- [ ] Support email set in store listing (`sai003sam@gmail.com` in [STORE_LISTING.md](docs/STORE_LISTING.md))
 - [ ] Screenshots captured per STORE_LISTING.md
 
 ## Automated tests (developer)

@@ -2,7 +2,7 @@
 
 **Last updated:** July 1, 2026  
 **Extension version:** 0.0.0.1  
-**Contact:** you@example.com (update before publish — see [Chrome Web Store listing](STORE_LISTING.md))
+**Contact:** sai003sam@gmail.com
 
 ## Summary
 

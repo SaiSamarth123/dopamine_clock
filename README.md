@@ -19,8 +19,8 @@ Load unpacked: Chrome → Extensions → Developer mode → Load unpacked → th
 | Asset | Location |
 |-------|----------|
 | QA checklist | [QA.md](QA.md) |
-| Privacy policy | [docs/privacy-policy.md](docs/privacy-policy.md) · [privacy-policy.html](privacy-policy.html) |
+| Privacy policy | [docs/privacy-policy.md](docs/privacy-policy.md) · [docs/index.html](docs/index.html) |
 | Chrome Web Store copy | [docs/STORE_LISTING.md](docs/STORE_LISTING.md) |
 | Icons | [icons/](icons/) |
 
-Before publishing: host `privacy-policy.html`, complete manual items in [QA.md](QA.md), add screenshots per store listing guide.
+Before publishing: enable GitHub Pages via **GitHub Actions** (not branch root — see [STORE_LISTING.md](docs/STORE_LISTING.md)), complete manual items in [QA.md](QA.md), add screenshots per store listing guide.

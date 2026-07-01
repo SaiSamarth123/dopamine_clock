@@ -25,7 +25,7 @@ New tab accountability: life urgency grid, mission gate, and focus timer. Data s
 
 **Focus timer** — 25/50/90-minute presets, pause/reset, extension badge countdown, and stats (blocks today, minutes, streak). Sessions complete even if you close every Memento tab.
 
-**Privacy-first** — No account, no analytics backend. Settings and stats live in Chrome local storage. Fonts are bundled locally. See our [privacy policy](https://saisamarth123.github.io/dopamine_clock/privacy-policy.html).
+**Privacy-first** — No account, no analytics backend. Settings and stats live in Chrome local storage. Fonts are bundled locally. See our [privacy policy](https://saisamarth123.github.io/dopamine_clock/).
 
 ---
 
@@ -39,9 +39,19 @@ New tab accountability: life urgency grid, mission gate, and focus timer. Data s
 
 ## Privacy policy URL
 
-**Live URL (after GitHub Pages deploy):** `https://saisamarth123.github.io/dopamine_clock/privacy-policy.html`
+**Live URL (after GitHub Pages deploy):** `https://saisamarth123.github.io/dopamine_clock/`
 
-Enable Pages: repo **Settings → Pages → Build and deployment → GitHub Actions** (workflow [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) deploys on push to `main`/`master`).
+### GitHub Pages setup (required)
+
+The repo root contains the **extension** (`index.html`, `app.js`, etc.). If Pages is set to deploy from the branch **root**, visitors get the extension instead of the privacy policy.
+
+1. Repo **Settings → Pages → Build and deployment**
+2. **Source:** choose **GitHub Actions** (not “Deploy from a branch”)
+3. If you previously used “Deploy from a branch”, switch to GitHub Actions and save
+4. Push to `main`/`master` (or run the **Deploy privacy policy to GitHub Pages** workflow manually)
+5. Confirm the site shows the privacy policy title (“Memento — Privacy Policy”), not the new-tab dashboard
+
+Workflow: [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) — copies only `docs/index.html` and `docs/privacy-policy.md` into the published site.
 
 Paste the URL above in the store “Privacy policy” field.
 
@@ -49,7 +59,7 @@ Paste the URL above in the store “Privacy policy” field.
 
 | Field | Value |
 |-------|--------|
-| Support email | you@example.com |
+| Support email | sai003sam@gmail.com |
 | Website (optional) | https://saisamarth123.github.io/dopamine_clock/ |
 | Developer name | Sai Samarth |
 
