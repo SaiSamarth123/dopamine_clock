@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memento — Privacy Policy</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      max-width: 42rem;
+      margin: 2rem auto;
+      padding: 0 1.25rem;
+      color: #1a1d24;
+      background: #f8f7f4;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { color: #e8e6e1; background: #12141a; }
+      a { color: #e8a838; }
+    }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.75rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; vertical-align: top; }
+    th { background: rgba(0,0,0,0.05); }
+    .meta { color: #666; font-size: 0.9rem; }
+    @media (prefers-color-scheme: dark) {
+      th, td { border-color: #444; }
+      th { background: rgba(255,255,255,0.06); }
+      .meta { color: #999; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Memento — Privacy Policy</h1>
+  <p class="meta"><strong>Last updated:</strong> July 1, 2026 · <strong>Version:</strong> 0.0.0.1</p>
+
+  <h2>Summary</h2>
+  <p>Memento replaces your new tab with a personal accountability dashboard. <strong>Settings, mission text, and focus stats stay on your device</strong> in Chrome local extension storage. We do not operate accounts, analytics, or a backend that receives your personal data.</p>
+
+  <h2>Data stored locally</h2>
+  <p>The extension uses <code>chrome.storage.local</code> for birth date, life expectancy, theme and layout preferences, mission and focus statistics, and cached dev.to article metadata. Uninstalling removes this data from your profile.</p>
+
+  <h2>Network requests</h2>
+  <table>
+    <thead><tr><th>Destination</th><th>When</th><th>What is sent</th></tr></thead>
+    <tbody>
+      <tr><td>dev.to API</td><td>Intelligence core tab</td><td>Public article API request; no Memento account</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Permissions</h2>
+  <ul>
+    <li><strong>storage</strong> — local settings and timer state</li>
+    <li><strong>alarms</strong> — badge and timer completion without a tab open</li>
+    <li><strong>https://dev.to/*</strong> — public articles for Intelligence core</li>
+  </ul>
+
+  <h2>Contact</h2>
+  <p>Support: <a href="mailto:sai003sam@gmail.com">sai003sam@gmail.com</a></p>
+
+  <p><a href="privacy-policy.md">Markdown source</a></p>
+</body>
+</html>
