@@ -1,0 +1,35 @@
+name: Deploy privacy policy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/index.html"
+      - "docs/privacy-policy.md"
+      - "docs/.nojekyll"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare privacy-policy site
+        run: |
+          mkdir publish
+          cp docs/index.html publish/index.html
+          cp docs/privacy-policy.md publish/privacy-policy.md
+          cp docs/.nojekyll publish/.nojekyll
+
+      - name: Publish to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./publish
+          publish_branch: gh-pages
+          force_orphan: true

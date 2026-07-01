@@ -43,16 +43,18 @@ New tab accountability: life urgency grid, mission gate, and focus timer. Data s
 
 ### GitHub Pages setup (required)
 
-The repo root contains the **extension** (`index.html`, `app.js`, etc.). GitHub Pages must publish **only** the `docs/` folder — never the branch root.
+The repo root contains the **extension** (`index.html`, `app.js`, etc.). Do **not** publish from `main` — use the dedicated `gh-pages` branch instead.
 
-1. Repo **Settings → Pages → Build and deployment**
-2. **Source:** **Deploy from a branch**
-3. **Branch:** `main` · **Folder:** `/docs` (not `/ (root)`)
-4. Save and wait 1–2 minutes
-5. Open `https://saisamarth123.github.io/dopamine_clock/` — you should see **“Memento — Privacy Policy”**
-6. If you still see the extension dashboard, the folder is still set to `/ (root)`. Change it to `/docs`.
+1. Push to `main` (workflow [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) copies only the privacy policy into `gh-pages`)
+2. Open **Actions** and confirm **Deploy privacy policy** succeeded
+3. Repo **Settings → Pages → Build and deployment**
+4. **Source:** **Deploy from a branch**
+5. **Branch:** `gh-pages` · **Folder:** `/ (root)`
+6. Save and wait 1–2 minutes
+7. Open `https://saisamarth123.github.io/dopamine_clock/` — tab title must be **“Memento — Privacy Policy”** (not just “Memento”)
+8. Quick check: `https://saisamarth123.github.io/dopamine_clock/app.js` should return **404** (extension files are not on this branch)
 
-The privacy policy lives at [`docs/index.html`](index.html). [`docs/.nojekyll`](.nojekyll) prevents Jekyll from processing the folder.
+If you previously used `main` + `/docs`, switch to `gh-pages` + `/ (root)` as above.
 
 Paste the URL above in the store “Privacy policy” field.
 
