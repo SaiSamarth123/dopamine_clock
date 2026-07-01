@@ -23,4 +23,4 @@ Load unpacked: Chrome → Extensions → Developer mode → Load unpacked → th
 | Chrome Web Store copy | [docs/STORE_LISTING.md](docs/STORE_LISTING.md) |
 | Icons | [icons/](icons/) |
 
-Before publishing: enable GitHub Pages via **GitHub Actions** (not branch root — see [STORE_LISTING.md](docs/STORE_LISTING.md)), complete manual items in [QA.md](QA.md), add screenshots per store listing guide.
+Before publishing: enable GitHub Pages from the **`/docs` folder** (not branch root — see [STORE_LISTING.md](docs/STORE_LISTING.md)), complete manual items in [QA.md](QA.md), add screenshots per store listing guide.

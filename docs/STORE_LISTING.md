@@ -43,15 +43,16 @@ New tab accountability: life urgency grid, mission gate, and focus timer. Data s
 
 ### GitHub Pages setup (required)
 
-The repo root contains the **extension** (`index.html`, `app.js`, etc.). If Pages is set to deploy from the branch **root**, visitors get the extension instead of the privacy policy.
+The repo root contains the **extension** (`index.html`, `app.js`, etc.). GitHub Pages must publish **only** the `docs/` folder — never the branch root.
 
 1. Repo **Settings → Pages → Build and deployment**
-2. **Source:** choose **GitHub Actions** (not “Deploy from a branch”)
-3. If you previously used “Deploy from a branch”, switch to GitHub Actions and save
-4. Push to `main`/`master` (or run the **Deploy privacy policy to GitHub Pages** workflow manually)
-5. Confirm the site shows the privacy policy title (“Memento — Privacy Policy”), not the new-tab dashboard
+2. **Source:** **Deploy from a branch**
+3. **Branch:** `main` · **Folder:** `/docs` (not `/ (root)`)
+4. Save and wait 1–2 minutes
+5. Open `https://saisamarth123.github.io/dopamine_clock/` — you should see **“Memento — Privacy Policy”**
+6. If you still see the extension dashboard, the folder is still set to `/ (root)`. Change it to `/docs`.
 
-Workflow: [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) — copies only `docs/index.html` and `docs/privacy-policy.md` into the published site.
+The privacy policy lives at [`docs/index.html`](index.html). [`docs/.nojekyll`](.nojekyll) prevents Jekyll from processing the folder.
 
 Paste the URL above in the store “Privacy policy” field.
 
